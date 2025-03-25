@@ -9,12 +9,28 @@
 #include <pthread.h>
 #include <endian.h>
 
-#define PORT 9734
+#define CONFIG_FILE "server.txt"
 #define BUFFER_SIZE 1024
 #define MAX_CLIENTS 10
 
 pthread_t *threads[MAX_CLIENTS];
 int thread_count = 0;
+
+
+int read_config(int *port) {
+    FILE *file = fopen(CONFIG_FILE, "r");
+    if (!file) {
+        printf("file error");
+        return 0;
+    }
+    if ( fscanf(file, "%d", port) != 1) {
+        printf("config error");
+        fclose(file);
+        return 0;
+    }
+    fclose(file);
+    return 1;
+}
 
 void *handle_client(void *arg) {
     int client_sock = *(int *)arg;
@@ -39,14 +55,14 @@ void *handle_client(void *arg) {
                 double number;
                 memcpy(&number, &num_bits, sizeof(double));
 
-                printf("Zapytanie (pierw): 0x%02X, RQ ID: %d, Value: %f\n",
-                       request_type, rq_id, number);
+                printf("Od: %d Zapytanie (pierw): 0x%02X, RQ ID: %d, Value: %f\n",
+                       client_sock,request_type, rq_id, number);
 
                 double result = sqrt(number);
-                printf("Wynik: %f\n", result);
+                printf("Od: %d: Wynik: %f\n", client_sock,result);
 
                 uint8_t response[13];
-                response[0] = 0x11;
+                response[0] = 0x01;
                 response[1] = 0x00;
                 response[2] = 0x00;
                 response[3] = 0x01;
@@ -65,22 +81,22 @@ void *handle_client(void *arg) {
 
                 time_t now = time(NULL);
                 struct tm *tm_info = localtime(&now);
-                char time_str[32];
+                char time_str[20];
                 strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", tm_info);
 
-                uint8_t len = strlen(time_str);  // Changed from uint16_t to uint8_t
+                uint8_t len = strlen(time_str);
 
-                uint8_t response[6 + len];  // Adjusted response size
-                response[0] = 0x11;
+                uint8_t response[6 + len];
+                response[0] = 0x01;
                 response[1] = 0x00;
                 response[2] = 0x00;
                 response[3] = 0x02;
                 response[4] = rq_id;
-                response[5] = len;  // Use uint8_t for length
+                response[5] = len;
                 memcpy(&response[6], time_str, len);
 
                write(client_sock, response, sizeof(response));
-                pos += 5;  // Move position by request size
+                pos += 5;
             }
             else {
                 printf("AJJJJJJJ: 0x%02X %zu\n", request_type, pos);
@@ -90,16 +106,16 @@ void *handle_client(void *arg) {
     }
 
     close(client_sock);
-    printf("Client disconnected\n");
+    printf("Klient sie rozłączył\n");
     return NULL;
 }
 
 int main() {
-    int server_sock, client_sock;
+
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len = sizeof(client_addr);
 
-    server_sock = socket(AF_INET, SOCK_STREAM, 0);
+    int server_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (server_sock == -1) {
         printf("Socket fail");
         return 1;
@@ -111,10 +127,11 @@ int main() {
         close(server_sock);
         return 1;
     }
-
+    int port;
+    read_config(&port);
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(PORT);
+    server_addr.sin_port = htons(port);
 
     if (bind(server_sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
         printf("Bind error");
@@ -128,10 +145,10 @@ int main() {
         return 1;
     }
 
-    printf("Serwer na porcie: %d...\n", PORT);
+    printf("Serwer na porcie: %d...\n", port);
 
     while (1) {
-        client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &client_len);
+        int client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &client_len);
         if (client_sock == -1) {
             printf("Accept fail");
             continue;

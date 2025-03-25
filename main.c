@@ -41,7 +41,7 @@ void send_request(int sock, uint8_t request_type, double number, uint8_t rq_id) 
 
         memcpy(&buffer[5], &num_bits, sizeof(uint64_t));
 
-        printf("Sending number: %f (byte representation: %lu)\n", number, num_bits);
+        printf("Wysłano liczbe: %f (W byte: %lu)\n", number, num_bits);
         write(sock, buffer, 13);
     }else if (request_type == 0x02) {
         write(sock, buffer, 5);
@@ -66,7 +66,7 @@ void receive_response(int sock) {
             double result;
             memcpy(&result, &result_bits, sizeof(double));
 
-            printf("Response (RQ ID %d): Square root result = %.6f\n", rq_id, result);
+            printf("Odpowiedź (RQ ID %d): Pierwiastek = %.2f\n", rq_id, result);
         }
         else if (response_type == 0x02) {
             uint8_t length = buffer[5];  // Changed from uint16_t to uint8_t
@@ -75,13 +75,13 @@ void receive_response(int sock) {
             memcpy(time_str, &buffer[6], length);  // Changed from buffer[7]
             time_str[length] = '\0';
 
-            printf("Response (RQ ID %d): Server time = %s\n", rq_id, time_str);
+            printf("Odpowiedź (RQ ID %d): Czas serwera = %s\n", rq_id, time_str);
         }
         else {
-            printf("Unknown response received (type: 0x%02X).\n", response_type);
+            printf("Nieznany typ odpowiedzi: 0x%02X\n", response_type);
         }
     } else {
-        printf("Error receiving response");
+        printf("Coś nie tak z odpowiedzia");
     }
 }
 
@@ -110,28 +110,34 @@ int main() {
         return 1;
     }
 
-    printf("polocznoa na %s:%d!\n", server_ip, port);
+    printf("Połączono na %s na porcie%d\n", server_ip, port);
 
     uint8_t rq_id = 1;
     while (1) {
-        printf("\nWybierz jedna z opcji:\n");
-        printf("1 - sqrt\n");
-        printf("2 - czas\n");
-        printf("0 - exit\n");
-        printf("Enter choice: ");
+        printf("\nWybierz:\n");
+        printf("1 - PIERWIASTEK\n");
+        printf("2 - CZAS\n");
+        printf("0 - WYJSCIE\n");
+        printf("WYBOR: ");
 
         int choice;
         scanf("%d", &choice);
 
         if (choice == 0) {
-            printf("koniec\n");
+            printf("Klient END!\n");
             break;
         }
 
         if (choice == 1) {
-            double number;
-            printf("Liczba: ");
-            scanf("%lf", &number);
+            double number =0;
+            while (1) {
+                printf("Liczba: ");
+                if (scanf("%lf", &number)!=1 || number < 0) {
+                    printf("Podaj właściwą liczbę!\n");
+                }else {
+                    break;
+                }
+            }
             send_request(sock, 0x01, number, rq_id++);
         }
         else if (choice == 2) {
