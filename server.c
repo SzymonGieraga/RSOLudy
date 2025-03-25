@@ -59,7 +59,7 @@ void *handle_client(void *arg) {
                        client_sock,request_type, rq_id, number);
 
                 double result = sqrt(number);
-                printf("Od: %d: Wynik: %f\n", client_sock,result);
+                printf("Od: %d Wynik: %f\n", client_sock,result);
 
                 uint8_t response[13];
                 response[0] = 0x01;
@@ -77,7 +77,7 @@ void *handle_client(void *arg) {
                 pos += 13;
             }
             else if (request_type == 0x02) {
-                printf("Zapytanie (czas), RQ ID: %d\n", rq_id);
+                printf("Od: %d Zapytanie (czas), RQ ID: %d\n", client_sock,rq_id);
 
                 time_t now = time(NULL);
                 struct tm *tm_info = localtime(&now);
@@ -121,12 +121,7 @@ int main() {
         return 1;
     }
 
-    int reuse = 1;
-    if (setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
-        printf("setsockpt fail");
-        close(server_sock);
-        return 1;
-    }
+
     int port;
     read_config(&port);
     server_addr.sin_family = AF_INET;
