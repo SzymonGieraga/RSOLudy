@@ -16,7 +16,7 @@ int read_config(char *server_ip, int *port) {
         return 0;
     }
     if (fscanf(file, "%15s", server_ip) != 1 || fscanf(file, "%d", port) != 1) {
-        perror("config error");
+        printf("config error");
         fclose(file);
         return 0;
     }
@@ -44,9 +44,9 @@ void send_request(int sock, uint8_t request_type, double number, uint8_t rq_id) 
         memcpy(&buffer[5], &num_bits, sizeof(uint64_t));
 
         printf("Sending number: %f (byte representation: %lu)\n", number, num_bits);
-        send(sock, buffer, 13, 0);
+        write(sock, buffer, 13);
     }else if (request_type == 0x02) {
-        send(sock, buffer, 5, 0);
+        write(sock, buffer, 5);
     }
 }
 
@@ -85,7 +85,7 @@ void receive_response(int sock) {
             printf("Unknown response received (type: 0x%02X).\n", response_type);
         }
     } else {
-        perror("Error receiving response");
+        printf("Error receiving response");
     }
 }
 
@@ -94,7 +94,7 @@ int main() {
     int port;
 
     if (!read_config(server_ip, &port)) {
-        return EXIT_FAILURE;
+        return 1;
     }
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -118,9 +118,9 @@ int main() {
 
     uint8_t rq_id = 1;
     while (1) {
-        printf("\nChoose request type:\n");
+        printf("\nWybierz jedna z opcji:\n");
         printf("1 - sqrt\n");
-        printf("2 - time\n");
+        printf("2 - czas\n");
         printf("0 - exit\n");
         printf("Enter choice: ");
 

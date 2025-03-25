@@ -58,7 +58,7 @@ void *handle_client(void *arg) {
                 result_bits = htobe64(result_bits);
                 memcpy(&response[5], &result_bits, sizeof(uint64_t));
 
-                send(client_sock, response, sizeof(response), 0);
+                write(client_sock, response, sizeof(response));
                 pos += 13;
             }
             else if (request_type == 0x02) {
@@ -81,7 +81,7 @@ void *handle_client(void *arg) {
                 memcpy(&response[5], &packet_len, sizeof(packet_len));
                 memcpy(&response[7], time_str, len);
 
-                send(client_sock, response, sizeof(response), 0);
+               write(client_sock, response, sizeof(response));
                 pos += 5;  // Move position by request size
             }
             else {
@@ -159,8 +159,6 @@ int main() {
             *threads[thread_count - 1] = thread;
         }
     }
-
-    // Cleanup (this code is never reached in this implementation)
     for (int i = 0; i < thread_count; i++) {
         pthread_join(*threads[i], NULL);
         free(threads[i]);
