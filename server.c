@@ -9,7 +9,7 @@
 #include <pthread.h>
 #include <endian.h>
 
-#define PORT 9000
+#define PORT 9734
 #define BUFFER_SIZE 1024
 #define MAX_CLIENTS 10
 
@@ -52,7 +52,6 @@ void *handle_client(void *arg) {
                 response[3] = 0x01;
                 response[4] = rq_id;
 
-
                 uint64_t result_bits;
                 memcpy(&result_bits, &result, sizeof(double));
                 result_bits = htobe64(result_bits);
@@ -69,17 +68,16 @@ void *handle_client(void *arg) {
                 char time_str[32];
                 strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", tm_info);
 
-                uint16_t len = strlen(time_str);
-                uint16_t packet_len = htons(len);
+                uint8_t len = strlen(time_str);  // Changed from uint16_t to uint8_t
 
-                uint8_t response[7 + len];
+                uint8_t response[6 + len];  // Adjusted response size
                 response[0] = 0x11;
                 response[1] = 0x00;
                 response[2] = 0x00;
                 response[3] = 0x02;
                 response[4] = rq_id;
-                memcpy(&response[5], &packet_len, sizeof(packet_len));
-                memcpy(&response[7], time_str, len);
+                response[5] = len;  // Use uint8_t for length
+                memcpy(&response[6], time_str, len);
 
                write(client_sock, response, sizeof(response));
                 pos += 5;  // Move position by request size

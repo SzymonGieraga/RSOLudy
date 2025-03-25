@@ -25,8 +25,6 @@ int read_config(char *server_ip, int *port) {
 }
 
 void send_request(int sock, uint8_t request_type, double number, uint8_t rq_id) {
-
-
     uint8_t buffer[13];
 
     buffer[0] = 0x00;
@@ -71,12 +69,10 @@ void receive_response(int sock) {
             printf("Response (RQ ID %d): Square root result = %.6f\n", rq_id, result);
         }
         else if (response_type == 0x02) {
-            uint16_t length;
-            memcpy(&length, &buffer[5], sizeof(length));
-            length = ntohs(length);
+            uint8_t length = buffer[5];  // Changed from uint16_t to uint8_t
 
             char time_str[length + 1];
-            memcpy(time_str, &buffer[7], length);
+            memcpy(time_str, &buffer[6], length);  // Changed from buffer[7]
             time_str[length] = '\0';
 
             printf("Response (RQ ID %d): Server time = %s\n", rq_id, time_str);
